@@ -1,0 +1,111 @@
+server:
+  port: ${vcap.application.port:7800}
+
+eureka:
+  client:
+    enabled: true
+  instance:
+    prefer-ip-address: true
+
+spring:
+  main:
+    allow-bean-definition-overriding: true
+  application:
+    name: b2wservice
+  data:
+    rest:
+      max-page-size: 1000
+      return-body-on-create: true
+      return-body-on-update: true
+    mongodb:
+      auto-index-creation: false
+  jackson:
+    deserialization:
+      adjust-dates-to-context-time-zone: false
+    serialization:
+      indent-output: true
+      write-dates-as-timestamps: false
+  cloud:
+    bus:
+      enabled: true
+      trace:
+        enabled: true
+    config:
+      enabled: false
+    consumer:
+      group-id: b2w-consumer
+      bootstrap-servers: ${kafka.server}:${kafka.port}
+      auto-offset-reset: earliest
+      properties:
+        spring:
+          json:
+            trusted:
+              packages: '*'
+    producer:
+      bootstrap-servers: ${kafka.server}:${kafka.port}
+channel:
+  print-stack-trace: true
+  append-stack-trace-message: true
+  max-itens-event: 1
+  kafka: # ver https://github.com/CodeSmell/CamelKafkaConsumer/
+    brokers: ${kafka.server}:${kafka.port}&serializerClass=br.com.hubee.infrastructure.integration.serializer.JsonSerializer&valueDeserializer=br.com.hubee.infrastructure.integration.serializer.JsonDeserializer&requestRequiredAcks=all&retries=1&autoCommitEnable=true&allowManualCommit=false&breakOnFirstError=true&maxPollRecords=1&autoOffsetReset=earliest&consumersCount=5&maxRequestSize=5252880&fetchMaxBytes=5252880&seekTo=
+  error:
+    endpoint: kafka:error?brokers=${channel.kafka.brokers}
+    maxRetry: 3
+    delay: 2000
+    back-off-multiplier: 2
+    too-many-request-delay: 60000
+  product-marketplace:
+    topic-name: productMarketplaceB2w
+    partition-size: 3
+    endpoint: kafka:${channel.product-marketplace.topic-name}?brokers=${channel.kafka.brokers}
+  product-marketplace-callback:
+    endpoint: kafka:productMarketplaceCallback?brokers=${channel.kafka.brokers}
+  stock-marketplace:
+    topic-name: stockMarketplaceB2w
+    endpoint: kafka:${channel.stock-marketplace.topic-name}?brokers=${channel.kafka.brokers}
+  stock-marketplace-callback:
+    endpoint: kafka:stockMarketplaceCallback?brokers=${channel.kafka.brokers}
+    partition-size: 4
+  price-marketplace:
+    topic-name: priceMarketplaceB2w
+    partition-size: 4
+    endpoint: kafka:${channel.price-marketplace.topic-name}?brokers=${channel.kafka.brokers}
+  price-marketplace-callback:
+    endpoint: kafka:priceMarketplaceCallback?brokers=${channel.kafka.brokers}
+  order-marketplace:
+    endpoint: kafka:orderMarketplace?brokers=${channel.kafka.brokers}
+  order-marketplace-callback:
+    endpoint: kafka:orderMarketplaceCallback?brokers=${channel.kafka.brokers}
+  product-association:
+    topic-name: productAssociationB2w
+    partition-size: 1
+    endpoint: kafka:${channel.product-association.topic-name}?brokers=${channel.kafka.brokers}
+  product-association-callback:
+    endpoint: kafka:productAssociationCallback?brokers=${channel.kafka.brokers}
+  product-association-confirmation:
+    endpoint: kafka:productAssociationConfirmation?brokers=${channel.kafka.brokers}
+  warehouse-marketplace:
+    topic-name: warehouseMarketplace
+    partition-size: 3
+    endpoint: kafka:${channel.warehouse-marketplace.topic-name}?brokers=${channel.kafka.brokers}
+  warehouse-marketplace-callback:
+    topic-name: warehouseMarketplaceCallback
+    endpoint: kafka:${channel.warehouse-marketplace-callback.topic-name}?brokers=${channel.kafka.brokers}
+kafka:
+  server: kafka
+  port: 9094
+  zookeeper:
+    server: kafka
+    port: 2181
+hubee:
+  async:
+    core-pool-size: 10
+    max-pool-size: 200
+    queue-capacity: 10000
+  security:
+    authentication:
+      jwt:
+        secret: 3855e4c20e76a477f9a3d3dadf622adb9f4a3528
+        token-validity-in-seconds: 86400
+        token-validity-in-seconds-for-remember-me: 2592000
